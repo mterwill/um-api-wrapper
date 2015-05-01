@@ -1,0 +1,24 @@
+{
+  "name": "um-api-wrapper",
+  "version": "1.0.0",
+  "description": "Wrapper for University of Michigan API",
+  "main": "api.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mterwill/um-api-wrapper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mterwill/um-api-wrapper/issues"
+  },
+  "author": {
+    "name": "Matthew Terwilliger",
+    "email": "mterwil@umich.edu"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "moment": "^2.10.2"
+  }
+}
