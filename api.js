@@ -1,11 +1,9 @@
 var https = require('https'),
     moment = require('moment'),
     token = require('./token');
+    cache = require('./cache');
 
-/*
- * To be implemented at a later date
- */
-var cache = {};
+var useCache = true;
 
 /*
  * Set configuration parameters
@@ -19,6 +17,16 @@ module.exports.setKeys = function(key, value) {
 };
 
 /*
+ * Enable/disable the cache
+ *
+ * @param {bool} _useCache
+ *
+ */
+module.exports.useCache = function(_useCache) {
+    useCache = Boolean(_useCache);
+};
+
+/*
  * Calls 'callback' with the JSON output from UM's API for 
  * the specified query string
  *
@@ -26,6 +34,7 @@ module.exports.setKeys = function(key, value) {
  *
  * @param {Object} options 
  * @param {optional string} options.host - api-gw.it.umich.edu
+ * @param {optional bool} options.useCache - true/false
  * @param {string} options.path - /Curriculum/Classrooms/v1/Classrooms
  *
  */
@@ -35,6 +44,8 @@ module.exports.call = function(options, callback) {
     } else if(typeof options.path === 'undefined') {
         throw new Error('Please supply a path for your request');
     }
+
+    options.useCache = options.useCache || useCache;
 
     // after getting our access token, make the api call
     var makeApiCall = function(accessTokenObj) {
@@ -56,6 +67,11 @@ module.exports.call = function(options, callback) {
                 response.on('end', function () {
                     responseObj = JSON.parse(responseData);
 
+                    if(options.useCache) {
+                        // save new data to our cache
+                        cache.storeCachedResponse(options, responseObj);
+                    }
+
                     callback(responseObj);
                 });
             };
@@ -63,7 +79,13 @@ module.exports.call = function(options, callback) {
         https.get(getOptions, getCallback);
     };
 
-    token.authenticate(makeApiCall);
+    if(options.useCache && cache.isCached(options)) {
+        // we have a valid, cached response. callback with that!
+        cache.getCachedResponse(options, callback);
+    } else {
+        // make an api call
+        token.authenticate(makeApiCall);
+    }
 };
 
 /*

@@ -1,6 +1,6 @@
 {
   "name": "um-api-wrapper",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Wrapper for University of Michigan API",
   "main": "api.js",
   "scripts": {
