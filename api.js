@@ -49,12 +49,19 @@ module.exports.call = function(options, callback) {
 
     // after getting our access token, make the api call
     var makeApiCall = function(accessTokenObj) {
+        if('error' in accessTokenObj) {
+            callback({ error: 'Error getting access token: ' + 
+                              accessTokenObj.error });
+            return;
+        }
+
         var getOptions = {
                 host: options.host || 'api-gw.it.umich.edu',
                 path: options.path,
                 headers: {
                     'Accept': 'application/json',
-                    'Authorization': 'Bearer ' + accessTokenObj.access_token,
+                    'Authorization': 'Bearer ' + accessTokenObj.
+                                                 token.access_token,
                 }
             },
             getCallback = function(response) {
@@ -65,18 +72,25 @@ module.exports.call = function(options, callback) {
                 });
 
                 response.on('end', function () {
-                    responseObj = JSON.parse(responseData);
+                    try {
+                        responseObj = JSON.parse(responseData);
+                    } catch(e) {
+                        callback({ error: 'JSON parse error: ' + e });
+                        return;
+                    }
 
                     if(options.useCache) {
                         // save new data to our cache
                         cache.storeCachedResponse(options, responseObj);
                     }
 
-                    callback(responseObj);
+                    callback({ result: responseObj });
                 });
             };
 
-        https.get(getOptions, getCallback);
+        https.get(getOptions, getCallback).on('error', function(e) {
+            callback({ error: 'API call error: ' + e.message });
+        });
     };
 
     if(options.useCache && cache.isCached(options)) {

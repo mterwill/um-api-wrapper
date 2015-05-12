@@ -18,7 +18,7 @@ module.exports.authenticate = function(callback) {
             getAccessToken(callback);
         } else {
             // console.log('token valid, and not expired');
-            callback(accessTokenObj);
+            callback({ token: accessTokenObj });
         }
     } else {
         // console.log('need to get a new token');
@@ -58,18 +58,28 @@ var getAccessToken = function(callback) {
             });
 
             response.on('end', function () {
-                accessTokenObj = JSON.parse(tokenData);
+                try {
+                    accessTokenObj = JSON.parse(tokenData);
+                } catch(e) {
+                    callback({ error: 'JSON parse error: ' + e });
+                    return;
+                }
 
                 accessTokenObj.expires_datetime = new Date();
                 accessTokenObj.expires_datetime = new Date(
                         accessTokenObj.expires_datetime.getTime() + 
                         accessTokenObj.expires_in * 1000);
 
-                callback(accessTokenObj);
+                callback({ token: accessTokenObj });
             });
         },
         postReq = https.request(postOptions, postCallback);
 
     postReq.write(postData);
+
+    postReq.on('error', function(e) {
+        callback({ error: e.message });
+    });
+
     postReq.end();
 };
