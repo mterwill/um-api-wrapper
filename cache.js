@@ -19,8 +19,7 @@ module.exports.isCached = function(options) {
         var timeDiff = Date.now() - cache[searchQuery].timestamp;
 
         // (now - time saved) < 12 hours
-        if(timeDiff < 15000) {
-        // if(timeDiff < 43200000) {
+        if(timeDiff < 43200000) {
             return 1;
         } else {
             return 0;

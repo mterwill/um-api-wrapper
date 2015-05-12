@@ -74,6 +74,22 @@ module.exports.call = function(options, callback) {
             }
         },
         getCallback = function(response) {
+            // non-standard response
+            if(response.statusCode !== 200) {
+                if(options.useCache && cache.isCached(options) >= 0) {
+                    // the object is cached, even if it's old,
+                    // let's return that object.
+                    cache.getCachedResponse(options, callback);
+                    return;
+                } else {
+                    // the server is unavailable, and the object isn't
+                    // cached at all, or the cache is off.
+                    // we return an error:
+                    callback({ error: 'UM API returned non-200 status code' });
+                    return;
+                }
+            }
+
             var responseData = '';
 
             response.on('data', function (chunk) {

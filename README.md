@@ -47,3 +47,25 @@ There are several additional functions available to simplify frequent calls:
                        '/Meetings?startDate=05-01-2015&endDate=05-03-2015';
 
         api.call(options, callback);
+
+## Caching
+
+Caching is turned on by default. Queries are cached for a period of 12 hours.
+The cache can be turned off by invoking the following function:
+
+    api.useCache(false);
+
+or individually, for each query by specifying an optional parameter in the 
+options object (defaults to the global useCache, which is set above, or true by
+default):
+
+    options.useCache = false;
+
+Additionally, we fall back on old cached data (even if it's older than 12 hours)
+if the API is unavailable or returns an error for any reason. Otherwise, you
+will get back from the server a response code 500, with an error object and
+message like so:
+
+    {
+        "error": "Error getting access token: UNABLE_TO_VERIFY_LEAF_SIGNATURE"
+    }
