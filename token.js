@@ -54,7 +54,7 @@ var getAccessToken = function(callback) {
         postCallback = function(response) {
             // non-standard response
             if(response.statusCode !== 200) {
-                callback({ error: 'UM access token request returned non-200' + 
+                callback({ error: 'UM access token request returned non-200 ' +
                     'status code' });
                 return;
             }
