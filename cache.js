@@ -5,7 +5,10 @@ var cache = {};
  * within the last 12 hours.
  *
  * @param {Object} options 
- * @returns {bool}
+ * @returns {int}
+ *  - returns > 0 when (now - time saved) < 12 hours
+ *  - returns 0 when (now - time saved) > 12 hours 
+ *  - returns < 0 when not cached
  *
  */
 module.exports.isCached = function(options) {
@@ -16,9 +19,14 @@ module.exports.isCached = function(options) {
         var timeDiff = Date.now() - cache[searchQuery].timestamp;
 
         // (now - time saved) < 12 hours
-        return timeDiff < 43200000;
+        if(timeDiff < 15000) {
+        // if(timeDiff < 43200000) {
+            return 1;
+        } else {
+            return 0;
+        }
     } else {
-        return false;
+        return -1;
     }
 };
 
@@ -35,7 +43,7 @@ module.exports.getCachedResponse = function(options, callback) {
     var searchQuery = options.host + options.path;
     
     if(searchQuery in cache) {
-        callback(cache[searchQuery].data);
+        callback({ result: cache[searchQuery].data });
     }
 };
 

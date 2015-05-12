@@ -1,6 +1,6 @@
 var https = require('https'),
     moment = require('moment'),
-    token = require('./token');
+    token = require('./token'),
     cache = require('./cache');
 
 var useCache = true;
@@ -50,50 +50,79 @@ module.exports.call = function(options, callback) {
     // after getting our access token, make the api call
     var makeApiCall = function(accessTokenObj) {
         if('error' in accessTokenObj) {
-            callback({ error: 'Error getting access token: ' + 
-                              accessTokenObj.error });
-            return;
+            if(options.useCache && cache.isCached(options) >= 0) {
+                // the object is cached, even if it's old, let's return
+                // that object.
+                cache.getCachedResponse(options, callback);
+                return;
+            } else {
+                // the server is unavailable, and the object isn't cached
+                // at all, or the cache is off. we return an error:
+                callback({ error: 'Error getting access token: ' + 
+                    accessTokenObj.error });
+                return;
+            }
         }
 
         var getOptions = {
-                host: options.host || 'api-gw.it.umich.edu',
-                path: options.path,
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': 'Bearer ' + accessTokenObj.
-                                                 token.access_token,
-                }
-            },
-            getCallback = function(response) {
-                var responseData = '';
+            host: options.host || 'api-gw.it.umich.edu',
+            path: options.path,
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': 'Bearer ' + accessTokenObj.
+                    token.access_token,
+            }
+        },
+        getCallback = function(response) {
+            var responseData = '';
 
-                response.on('data', function (chunk) {
-                    responseData += chunk;
-                });
+            response.on('data', function (chunk) {
+                responseData += chunk;
+            });
 
-                response.on('end', function () {
-                    try {
-                        responseObj = JSON.parse(responseData);
-                    } catch(e) {
+            response.on('end', function () {
+                try {
+                    responseObj = JSON.parse(responseData);
+                } catch(e) {
+                    if(options.useCache && cache.isCached(options) >= 0) {
+                        // the object is cached, even if it's old,
+                        // let's return that object.
+                        cache.getCachedResponse(options, callback);
+                        return;
+                    } else {
+                        // the server is unavailable, and the object isn't
+                        // cached at all, or the cache is off.
+                        // we return an error:
                         callback({ error: 'JSON parse error: ' + e });
                         return;
                     }
+                }
 
-                    if(options.useCache) {
-                        // save new data to our cache
-                        cache.storeCachedResponse(options, responseObj);
-                    }
+                if(options.useCache) {
+                    // save new data to our cache
+                    cache.storeCachedResponse(options, responseObj);
+                }
 
-                    callback({ result: responseObj });
-                });
-            };
+                callback({ result: responseObj });
+            });
+        };
 
         https.get(getOptions, getCallback).on('error', function(e) {
-            callback({ error: 'API call error: ' + e.message });
+            if(options.useCache && cache.isCached(options) >= 0) {
+                // the object is cached, even if it's old, let's return
+                // that object.
+                cache.getCachedResponse(options, callback);
+                return;
+            } else {
+                // the server is unavailable, and the object isn't cached
+                // at all, or the cache is off. we return an error:
+                callback({ error: 'API call error: ' + e.message });
+                return;
+            }
         });
     };
 
-    if(options.useCache && cache.isCached(options)) {
+    if(options.useCache && cache.isCached(options) > 0) {
         // we have a valid, cached response. callback with that!
         cache.getCachedResponse(options, callback);
     } else {
@@ -120,8 +149,8 @@ module.exports.getMeetings = function(facilityID, startDate, endDate, callback) 
     var options = {};
 
     options.path = '/Curriculum/Classrooms/v1/Classrooms/' + facilityID +
-    '/Meetings?startDate=' + startDate.format('MM-DD-YYYY') +
-    '&endDate=' + endDate.format('MM-DD-YYYY');
+        '/Meetings?startDate=' + startDate.format('MM-DD-YYYY') +
+        '&endDate=' + endDate.format('MM-DD-YYYY');
 
     module.exports.call(options, callback);
 };
